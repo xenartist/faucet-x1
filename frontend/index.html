@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X1 Testnet Faucet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #fff;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 30px;
+            border-radius: 5px;
+            width: 100%;
+            max-width: 600px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: normal;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        label {
+            flex-shrink: 0;
+            width: 120px;
+            font-weight: normal;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #999;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #555;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 3px;
+            text-align: center;
+            font-size: 14px;
+            word-break: break-all;
+            overflow-wrap: break-word;
+            line-height: 1.4;
+        }
+        .success {
+            background: #f0f8f0;
+            color: #2d5a2d;
+            border: 1px solid #c0d8c0;
+        }
+        .success a {
+            color: #1a4a1a;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .success a:hover {
+            color: #0a2a0a;
+            text-decoration: none;
+        }
+        .error {
+            background: #f8f0f0;
+            color: #5a2d2d;
+            border: 1px solid #d8c0c0;
+        }
+        .info {
+            background: #f8f8f8;
+            color: #666;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>X1 Testnet Faucet</h1>
+        
+        <form id="airdropForm">
+            <div class="form-group">
+                <label for="publicKey">X1 Public Key:</label>
+                <input 
+                    type="text" 
+                    id="publicKey" 
+                    name="publicKey" 
+                    placeholder="Enter your X1 public key"
+                    required
+                />
+            </div>
+            
+            <button type="submit" id="submitBtn">Request Airdrop</button>
+        </form>
+
+        <div id="message" class="message" style="display: none;"></div>
+
+        <div class="info message">
+            Each address can request airdrop once every 24 hours. Get 1 XNT per request.
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+        
+        document.getElementById('airdropForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const messageDiv = document.getElementById('message');
+            const publicKeyInput = document.getElementById('publicKey');
+            
+            const publicKey = publicKeyInput.value.trim();
+            
+            // Basic validation
+            if (!publicKey) {
+                showMessage('Please enter a X1 public key', 'error');
+                return;
+            }
+            
+            // Simple Solana public key format validation
+            if (publicKey.length < 32 || publicKey.length > 44) {
+                showMessage('Invalid X1 public key format', 'error');
+                return;
+            }
+            
+            // Disable button and show loading state
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/airdrop`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        public_key: publicKey
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const explorerUrl = `https://explorer.x1.xyz/tx/${data.signature}`;
+                    const successMessage = `Airdrop successful! Transaction: <a href="${explorerUrl}" target="_blank">${data.signature}</a>`;
+                    showMessage(successMessage, 'success');
+                    publicKeyInput.value = '';
+                } else {
+                    showMessage(`Airdrop failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Network error, please try again later', 'error');
+            } finally {
+                // Restore button state
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Request Airdrop';
+            }
+        });
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = text;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // Success messages will remain visible until page refresh
+            // Error messages will auto-hide after 5 seconds
+            if (type === 'error') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html> 
