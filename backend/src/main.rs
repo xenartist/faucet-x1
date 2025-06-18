@@ -22,9 +22,97 @@ use std::{path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use tracing::{error, info, warn};
+use uuid::Uuid;
+use rand::Rng;
 
 // X1 Network token constants
 const LAMPORTS_PER_XNT: u64 = LAMPORTS_PER_SOL; // 1 XNT = 1e9 lamports
+
+// Math challenge structure
+#[derive(Debug, Clone, Serialize)]
+struct MathChallenge {
+    question: String,
+    session_id: String,
+    expires_at: DateTime<Utc>,
+}
+
+#[derive(Debug)]
+struct MathChallengeData {
+    answer: i32,
+    expires_at: DateTime<Utc>,
+}
+
+// Math challenge store
+#[derive(Debug)]
+struct MathChallengeStore {
+    challenges: DashMap<String, MathChallengeData>,
+}
+
+impl MathChallengeStore {
+    fn new() -> Self {
+        Self {
+            challenges: DashMap::new(),
+        }
+    }
+
+    fn generate_challenge(&self) -> MathChallenge {
+        let mut rng = rand::thread_rng();
+        let a = rng.gen_range(1..=20);
+        let b = rng.gen_range(1..=20);
+        let answer = a + b;
+        let session_id = Uuid::new_v4().to_string();
+        let expires_at = Utc::now() + chrono::Duration::minutes(5);
+
+        // Store the challenge data
+        self.challenges.insert(
+            session_id.clone(),
+            MathChallengeData {
+                answer,
+                expires_at,
+            },
+        );
+
+        MathChallenge {
+            question: format!("{} + {} = ?", a, b),
+            session_id,
+            expires_at,
+        }
+    }
+
+    fn verify_answer(&self, session_id: &str, user_answer: i32) -> bool {
+        if let Some(challenge_data) = self.challenges.get(session_id) {
+            let now = Utc::now();
+            let correct_answer = challenge_data.answer;
+            let expires_at = challenge_data.expires_at;
+            
+            if now > expires_at {
+                // Challenge expired
+                drop(challenge_data);
+                self.challenges.remove(session_id);
+                return false;
+            }
+            
+            let is_correct = correct_answer == user_answer;
+            
+            if is_correct {
+                // Remove challenge after successful verification
+                drop(challenge_data);
+                self.challenges.remove(session_id);
+            }
+            
+            return is_correct;
+        }
+        
+        false
+    }
+
+    fn cleanup_expired(&self) {
+        let now = Utc::now();
+        self.challenges.retain(|_, challenge_data| {
+            now <= challenge_data.expires_at
+        });
+    }
+}
 
 // Application state
 #[derive(Clone)]
@@ -32,6 +120,7 @@ struct AppState {
     rpc_client: Arc<RpcClient>,
     faucet_keypair: Arc<Keypair>,
     rate_limiter: Arc<RateLimiter>,
+    math_store: Arc<MathChallengeStore>,
 }
 
 // Rate limiter
@@ -72,13 +161,15 @@ impl RateLimiter {
     }
 }
 
-// Request structure
+// Request structures
 #[derive(Deserialize)]
 struct AirdropRequest {
     public_key: String,
+    math_session_id: String,
+    math_answer: i32,
 }
 
-// Response structure
+// Response structures
 #[derive(Serialize)]
 struct AirdropResponse {
     signature: String,
@@ -101,6 +192,8 @@ enum FaucetError {
     SolanaError(String),
     #[error("Insufficient funds")]
     InsufficientFunds,
+    #[error("Math challenge verification failed")]
+    MathVerificationFailed,
 }
 
 impl FaucetError {
@@ -110,6 +203,7 @@ impl FaucetError {
             FaucetError::RateLimited => StatusCode::TOO_MANY_REQUESTS,
             FaucetError::SolanaError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             FaucetError::InsufficientFunds => StatusCode::SERVICE_UNAVAILABLE,
+            FaucetError::MathVerificationFailed => StatusCode::BAD_REQUEST,
         }
     }
 }
@@ -154,12 +248,22 @@ async fn load_keypair_from_config() -> anyhow::Result<Keypair> {
         .map_err(|e| anyhow::anyhow!("Failed to create keypair from bytes: {}", e))
 }
 
+// API endpoints
+
 // Health check endpoint
 async fn health_check() -> Json<serde_json::Value> {
     Json(serde_json::json!({
         "status": "healthy",
         "timestamp": Utc::now().to_rfc3339()
     }))
+}
+
+// Math challenge endpoint
+async fn get_math_challenge(
+    State(state): State<AppState>,
+) -> Json<MathChallenge> {
+    let challenge = state.math_store.generate_challenge();
+    Json(challenge)
 }
 
 // Airdrop handler function
@@ -169,6 +273,17 @@ async fn handle_airdrop(
     Json(payload): Json<AirdropRequest>,
 ) -> Result<Json<AirdropResponse>, (StatusCode, Json<ErrorResponse>)> {
     info!("Received airdrop request: {}", payload.public_key);
+
+    // Verify math challenge first
+    if !state.math_store.verify_answer(&payload.math_session_id, payload.math_answer) {
+        warn!("Math challenge verification failed for session: {}", payload.math_session_id);
+        return Err((
+            FaucetError::MathVerificationFailed.status_code(),
+            Json(ErrorResponse {
+                error: FaucetError::MathVerificationFailed.to_string(),
+            }),
+        ));
+    }
 
     // Parse public key
     let recipient_pubkey = Pubkey::from_str(&payload.public_key)
@@ -343,17 +458,21 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    // Create rate limiter
+    // Create rate limiter and math store
     let rate_limiter = Arc::new(RateLimiter::new());
+    let math_store = Arc::new(MathChallengeStore::new());
 
-    // Start cleanup task
+    // Start cleanup tasks
     let rate_limiter_cleanup = rate_limiter.clone();
+    let math_store_cleanup = math_store.clone();
+    
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(3600)); // Clean up every hour
         loop {
             interval.tick().await;
             rate_limiter_cleanup.cleanup_expired();
-            info!("Cleaned up expired rate limit records");
+            math_store_cleanup.cleanup_expired();
+            info!("Cleaned up expired rate limit and math challenge records");
         }
     });
 
@@ -362,6 +481,7 @@ async fn main() -> anyhow::Result<()> {
         rpc_client,
         faucet_keypair,
         rate_limiter,
+        math_store,
     };
 
     // Configure CORS
@@ -373,6 +493,7 @@ async fn main() -> anyhow::Result<()> {
     // Create routes
     let app = Router::new()
         .route("/health", get(health_check))
+        .route("/challenge", get(get_math_challenge))
         .route("/airdrop", post(handle_airdrop))
         .nest_service("/", ServeDir::new("../frontend"))
         .layer(cors)
