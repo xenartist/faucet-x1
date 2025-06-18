@@ -268,7 +268,6 @@ async fn get_math_challenge(
 
 // Airdrop handler function
 async fn handle_airdrop(
-    headers: HeaderMap,
     State(state): State<AppState>,
     Json(payload): Json<AirdropRequest>,
 ) -> Result<Json<AirdropResponse>, (StatusCode, Json<ErrorResponse>)> {
