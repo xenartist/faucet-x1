@@ -297,17 +297,8 @@ async fn handle_airdrop(
             )
         })?;
 
-    // Get client IP (for rate limiting)
-    let client_ip = headers
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown")
-        .split(',')
-        .next()
-        .unwrap_or("unknown");
-
-    // Use combination of public key and IP as rate limit key
-    let rate_limit_key = format!("{}:{}", payload.public_key, client_ip);
+    // Use only wallet address as rate limit key
+    let rate_limit_key = payload.public_key.clone();
 
     // Check rate limit
     if !state.rate_limiter.check_and_update(&rate_limit_key) {
