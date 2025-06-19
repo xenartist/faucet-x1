@@ -207,7 +207,10 @@
         <div id="message" class="message" style="display: none;"></div>
 
         <div class="info message">
-            Each address can request airdrop once every 24 hours. Get 1 XNT per request.
+            Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br><br>
+            <strong>Support this faucet by donating XNT:</strong><br>
+            Donation address: <span style="font-family: monospace; word-break: break-all; color: #5DADE2;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
+            Current balance: <span id="donationBalance">Loading...</span> XNT
         </div>
         
         <div class="footer-info">
@@ -222,6 +225,7 @@
         // Load math challenge when page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadMathChallenge();
+            loadDonationBalance();
         });
         
         async function loadMathChallenge() {
@@ -334,6 +338,43 @@
                 submitBtn.textContent = 'Request Airdrop';
             }
         });
+        
+        async function loadDonationBalance() {
+            const balanceSpan = document.getElementById('donationBalance');
+            const donationAddress = 'CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV';
+            
+            try {
+                const response = await fetch('https://rpc.testnet.x1.xyz', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: 1,
+                        method: 'getBalance',
+                        params: [donationAddress]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch balance');
+                }
+                
+                const data = await response.json();
+                
+                if (data.result && data.result.value !== undefined) {
+                    // Convert lamports to XNT (assuming 1 XNT = 1e9 lamports like SOL)
+                    const balanceInXNT = (data.result.value / 1e9).toFixed(4);
+                    balanceSpan.textContent = balanceInXNT;
+                } else {
+                    balanceSpan.textContent = 'Error loading';
+                }
+            } catch (error) {
+                console.error('Error loading donation balance:', error);
+                balanceSpan.textContent = 'Error loading';
+            }
+        }
         
         function showMessage(text, type) {
             const messageDiv = document.getElementById('message');
