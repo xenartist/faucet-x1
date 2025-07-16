@@ -94,6 +94,23 @@
             color: #adb5bd;
         }
         
+        .balance-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .balance-display {
+            font-size: 13px;
+            color: #007bff;
+            background: rgba(0, 123, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            min-width: 120px;
+            text-align: center;
+            border: 1px solid rgba(0, 123, 255, 0.2);
+        }
+        
         .math-challenge {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border: 2px solid #e9ecef;
@@ -120,6 +137,25 @@
             margin-bottom: 12px;
             text-align: center;
             color: #2c3e50;
+        }
+        
+        .math-challenge .form-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .math-challenge .form-group label {
+            flex-shrink: 0;
+            width: 60px;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        .math-challenge .form-group input {
+            flex: 1;
+            margin-bottom: 0;
         }
         
         .challenge-refresh {
@@ -245,7 +281,7 @@
             pointer-events: none;
         }
         
-        /* 响应式设计 */
+        /* responsive design */
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -269,9 +305,19 @@
                 padding: 14px;
                 font-size: 16px;
             }
+            
+            .balance-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .balance-display {
+                text-align: center;
+                margin-top: 8px;
+            }
         }
         
-        /* 添加一些微妙的动画效果 */
+        /* add some subtle animation effects */
         .container {
             animation: fadeInUp 0.6s ease-out;
         }
@@ -287,39 +333,36 @@
             }
         }
         
-        /* 改进的输入框样式 */
+        /* improved input box style */
         input[type="text"], input[type="number"] {
             position: relative;
         }
         
-        /* 添加焦点时的光晕效果 */
+        /* add focus glow effect */
         input[type="text"]:focus, input[type="number"]:focus {
             transform: translateY(-1px);
         }
         
-        /* 改进按钮的活跃状态 */
+        /* improve the active state of the button */
         button[type="submit"]:active {
             transform: translateY(0);
             box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
         }
 
-        .math-challenge .form-group {
-            flex-direction: row;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
+        .math-challenge.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            background: linear-gradient(135deg, #f1f3f4 0%, #e8eaed 100%);
         }
-        
-        .math-challenge .form-group label {
-            flex-shrink: 0;
-            width: 60px;
-            margin-bottom: 0;
-            font-size: 14px;
+
+        .math-challenge.disabled input {
+            background: #f8f9fa;
+            color: #6c757d;
         }
-        
-        .math-challenge .form-group input {
-            flex: 1;
-            margin-bottom: 0;
+
+        .math-challenge.disabled .refresh-btn {
+            color: #adb5bd;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -333,15 +376,18 @@
         
         <form id="airdropForm">
             <div class="form-group">
-                <label for="publicKey">X1 Public Key:</label>
-                <input 
-                    type="text" 
-                    id="publicKey" 
-                    name="publicKey" 
-                    placeholder="Enter your X1 public key"
-                    autocomplete="off"
-                    required
-                />
+                <label for="publicKey">X1 Public Address:</label>
+                <div class="balance-container">
+                    <input 
+                        type="text" 
+                        id="publicKey" 
+                        name="publicKey" 
+                        placeholder="Enter your X1 public address"
+                        autocomplete="off"
+                        required
+                    />
+                    <div id="solXENBalance" class="balance-display">solXEN: --</div>
+                </div>
             </div>
             
             <div class="math-challenge" id="mathChallenge" style="display: none;">
@@ -366,7 +412,8 @@
         <div id="message" class="message" style="display: none;"></div>
 
         <div class="info message">
-            Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br><br>
+            Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br>
+            <strong>Requirements:</strong> Must hold at least 42,069 solXEN tokens on Solana Mainnet.<br><br>
             <strong>Support this faucet by donating XNT:</strong><br>
             Donation address: <span style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; word-break: break-all; color: #007bff; background: rgba(0, 123, 255, 0.1); padding: 4px 8px; border-radius: 6px;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
             Current balance: <span id="donationBalance">Loading...</span> XNT
@@ -381,10 +428,108 @@
         const API_BASE = '';
         let currentChallenge = null;
         
-        // Load math challenge when page loads
+        const solXENBalanceDiv = document.getElementById('solXENBalance');
+        const publicKeyInput = document.getElementById('publicKey');
+
+        // form state management
+        function updateFormState(solxenBalance) {
+            const mathChallenge = document.getElementById('mathChallenge');
+            const submitBtn = document.getElementById('submitBtn');
+            const mathAnswer = document.getElementById('mathAnswer');
+            const refreshBtn = document.getElementById('refreshChallenge');
+            
+            const isEligible = solxenBalance >= 42069;
+            
+            if (isEligible) {
+                // enable state
+                mathChallenge.classList.remove('disabled');
+                submitBtn.disabled = false;
+                mathAnswer.disabled = false;
+                refreshBtn.disabled = false;
+            } else {
+                // disable state
+                mathChallenge.classList.add('disabled');
+                submitBtn.disabled = true;
+                mathAnswer.disabled = true;
+                refreshBtn.disabled = true;
+            }
+        }
+
+        // modify the initial state of the page
         document.addEventListener('DOMContentLoaded', function() {
+            // set the initial state to disabled
+            const mathChallenge = document.getElementById('mathChallenge');
+            const submitBtn = document.getElementById('submitBtn');
+            const mathAnswer = document.getElementById('mathAnswer');
+            const refreshBtn = document.getElementById('refreshChallenge');
+            
+            mathChallenge.classList.add('disabled');
+            submitBtn.disabled = true;
+            mathAnswer.disabled = true;
+            refreshBtn.disabled = true;
+            
             loadMathChallenge();
             loadDonationBalance();
+        });
+
+        // solXEN balance query with debounce
+        let balanceQueryTimeout;
+        publicKeyInput.addEventListener('input', function() {
+            const address = publicKeyInput.value.trim();
+            
+            clearTimeout(balanceQueryTimeout);
+            
+            if (address.length < 32 || address.length > 44) {
+                solXENBalanceDiv.textContent = 'solXEN: --';
+                updateFormState(0); // disable form
+                return;
+            }
+
+            solXENBalanceDiv.textContent = 'solXEN: Loading...';
+            updateFormState(0); // disable form during query
+            
+            // Debounce the query by 500ms
+            balanceQueryTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/solxen_balance', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ address })
+                    });
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        const balance = parseFloat(data.balance);
+                        solXENBalanceDiv.textContent = `solXEN: ${balance.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+                        
+                        // Change color based on requirement
+                        if (balance >= 42069) {
+                            solXENBalanceDiv.style.color = '#28a745';
+                            solXENBalanceDiv.style.background = 'rgba(40, 167, 69, 0.1)';
+                            solXENBalanceDiv.style.borderColor = 'rgba(40, 167, 69, 0.2)';
+                        } else {
+                            solXENBalanceDiv.style.color = '#dc3545';
+                            solXENBalanceDiv.style.background = 'rgba(220, 53, 69, 0.1)';
+                            solXENBalanceDiv.style.borderColor = 'rgba(220, 53, 69, 0.2)';
+                        }
+                        
+                        // update form state
+                        updateFormState(balance);
+                    } else {
+                        solXENBalanceDiv.textContent = 'solXEN: Query failed';
+                        solXENBalanceDiv.style.color = '#6c757d';
+                        solXENBalanceDiv.style.background = 'rgba(108, 117, 125, 0.1)';
+                        solXENBalanceDiv.style.borderColor = 'rgba(108, 117, 125, 0.2)';
+                        updateFormState(0);
+                    }
+                } catch (e) {
+                    solXENBalanceDiv.textContent = 'solXEN: Network error';
+                    solXENBalanceDiv.style.color = '#6c757d';
+                    solXENBalanceDiv.style.background = 'rgba(108, 117, 125, 0.1)';
+                    solXENBalanceDiv.style.borderColor = 'rgba(108, 117, 125, 0.2)';
+                    updateFormState(0);
+                }
+            }, 500);
         });
         
         async function loadMathChallenge() {
@@ -433,13 +578,13 @@
             
             // Basic validation
             if (!publicKey) {
-                showMessage('Please enter a X1 public key', 'error');
+                showMessage('Please enter a X1 public address', 'error');
                 return;
             }
             
-            // Simple Solana public key format validation
+            // Simple X1 public address format validation
             if (publicKey.length < 32 || publicKey.length > 44) {
-                showMessage('Invalid X1 public key format', 'error');
+                showMessage('Invalid X1 public address format', 'error');
                 return;
             }
             
@@ -479,6 +624,8 @@
                     showMessage(successMessage, 'success');
                     publicKeyInput.value = '';
                     mathAnswerInput.value = '';
+                    solXENBalanceDiv.textContent = 'solXEN: --';
+                    updateFormState(0); // reset to disabled state
                     // Load new challenge for next request
                     loadMathChallenge();
                 } else {

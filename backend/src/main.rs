@@ -18,6 +18,7 @@ use solana_sdk::{
     system_instruction,
     transaction::Transaction,
 };
+use spl_associated_token_account::get_associated_token_address;
 use std::{path::PathBuf, str::FromStr, sync::Arc, time::Duration};
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
@@ -27,6 +28,8 @@ use rand::Rng;
 
 // X1 Network token constants
 const LAMPORTS_PER_XNT: u64 = LAMPORTS_PER_SOL; // 1 XNT = 1e9 lamports
+const SOLXEN_MINT: &str = "6f8deE148nynnSiWshA9vLydEbJGpDeKh5G4PRgjmzG7";
+const MIN_SOLXEN_REQUIRED: u64 = 42069;
 
 // Math challenge structure
 #[derive(Debug, Clone, Serialize)]
@@ -248,6 +251,57 @@ async fn load_keypair_from_config() -> anyhow::Result<Keypair> {
         .map_err(|e| anyhow::anyhow!("Failed to create keypair from bytes: {}", e))
 }
 
+// solXEN balance query functions - corrected version with proper decimals
+async fn get_solxen_balance(owner: &Pubkey, mint: &Pubkey) -> anyhow::Result<f64> {
+    let mainnet_rpc = RpcClient::new_with_commitment(
+        "https://api.mainnet-beta.solana.com".to_string(),
+        CommitmentConfig::confirmed(),
+    );
+    
+    let ata = get_associated_token_address(owner, mint);
+    match mainnet_rpc.get_token_account_balance(&ata) {
+        Ok(balance) => {
+            // Use ui_amount which already accounts for decimals
+            Ok(balance.ui_amount.unwrap_or(0.0))
+        }
+        Err(_) => Ok(0.0), // Account not found or error, treat as 0 balance
+    }
+}
+
+// API structures for solXEN balance query
+#[derive(Deserialize)]
+struct BalanceQuery {
+    address: String,
+}
+
+#[derive(Serialize)]
+struct BalanceResponse {
+    balance: String,
+}
+
+// solXEN balance API endpoint
+async fn solxen_balance_handler(
+    Json(query): Json<BalanceQuery>,
+) -> Result<Json<BalanceResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let mint = Pubkey::from_str(SOLXEN_MINT)
+        .map_err(|_| (
+            StatusCode::BAD_REQUEST, 
+            Json(ErrorResponse { error: "Invalid mint address".to_string() })
+        ))?;
+    
+    let owner = Pubkey::from_str(&query.address)
+        .map_err(|_| (
+            StatusCode::BAD_REQUEST, 
+            Json(ErrorResponse { error: "Invalid wallet address".to_string() })
+        ))?;
+    
+    let balance = get_solxen_balance(&owner, &mint).await.unwrap_or(0.0);
+    
+    Ok(Json(BalanceResponse {
+        balance: balance.to_string(),
+    }))
+}
+
 // API endpoints
 
 // Health check endpoint
@@ -295,6 +349,24 @@ async fn handle_airdrop(
                 }),
             )
         })?;
+
+    // Check solXEN balance requirement
+    let mint = Pubkey::from_str(SOLXEN_MINT)
+        .map_err(|_| (
+            StatusCode::BAD_REQUEST, 
+            Json(ErrorResponse { error: "Invalid mint address".to_string() })
+        ))?;
+    
+    let solxen_balance = get_solxen_balance(&recipient_pubkey, &mint).await.unwrap_or(0.0);
+    if solxen_balance < MIN_SOLXEN_REQUIRED as f64 {
+        warn!("Insufficient solXEN balance: {} (required: {})", solxen_balance, MIN_SOLXEN_REQUIRED);
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(ErrorResponse {
+                error: format!("Must hold at least {} solXEN to claim airdrop (current balance: {:.2})", MIN_SOLXEN_REQUIRED, solxen_balance),
+            }),
+        ));
+    }
 
     // Use only wallet address as rate limit key
     let rate_limit_key = payload.public_key.clone();
@@ -485,6 +557,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/health", get(health_check))
         .route("/challenge", get(get_math_challenge))
         .route("/airdrop", post(handle_airdrop))
+        .route("/solxen_balance", post(solxen_balance_handler))
         .nest_service("/", ServeDir::new("../frontend"))
         .layer(cors)
         .with_state(app_state);
