@@ -386,7 +386,9 @@
                         autocomplete="off"
                         required
                     />
-                    <div id="solXENBalance" class="balance-display">solXEN: --</div>
+                    <div id="solXENBalance" class="balance-display">
+                        <a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: --
+                    </div>
                 </div>
             </div>
             
@@ -413,7 +415,7 @@
 
         <div class="info message">
             Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br>
-            <strong>Requirements:</strong> Must hold at least 42,069 solXEN tokens on Solana Mainnet.<br><br>
+            <strong>Requirements:</strong> Must hold at least 42,069 <a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: #007bff; text-decoration: underline;">solXEN</a> tokens on Solana Mainnet.<br><br>
             <strong>Support this faucet by donating XNT:</strong><br>
             Donation address: <span style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; word-break: break-all; color: #007bff; background: rgba(0, 123, 255, 0.1); padding: 4px 8px; border-radius: 6px;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
             Current balance: <span id="donationBalance">Loading...</span> XNT
@@ -480,12 +482,12 @@
             clearTimeout(balanceQueryTimeout);
             
             if (address.length < 32 || address.length > 44) {
-                solXENBalanceDiv.textContent = 'solXEN: --';
+                solXENBalanceDiv.innerHTML = '<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: --';
                 updateFormState(0); // disable form
                 return;
             }
 
-            solXENBalanceDiv.textContent = 'solXEN: Loading...';
+            solXENBalanceDiv.innerHTML = '<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: Loading...';
             updateFormState(0); // disable form during query
             
             // Debounce the query by 500ms
@@ -500,7 +502,8 @@
                     
                     if (res.ok) {
                         const balance = parseFloat(data.balance);
-                        solXENBalanceDiv.textContent = `solXEN: ${balance.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+                        const balanceText = `${balance.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+                        solXENBalanceDiv.innerHTML = `<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: ${balanceText}`;
                         
                         // Change color based on requirement
                         if (balance >= 42069) {
@@ -516,14 +519,14 @@
                         // update form state
                         updateFormState(balance);
                     } else {
-                        solXENBalanceDiv.textContent = 'solXEN: Query failed';
+                        solXENBalanceDiv.innerHTML = '<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: Query failed';
                         solXENBalanceDiv.style.color = '#6c757d';
                         solXENBalanceDiv.style.background = 'rgba(108, 117, 125, 0.1)';
                         solXENBalanceDiv.style.borderColor = 'rgba(108, 117, 125, 0.2)';
                         updateFormState(0);
                     }
                 } catch (e) {
-                    solXENBalanceDiv.textContent = 'solXEN: Network error';
+                    solXENBalanceDiv.innerHTML = '<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: Network error';
                     solXENBalanceDiv.style.color = '#6c757d';
                     solXENBalanceDiv.style.background = 'rgba(108, 117, 125, 0.1)';
                     solXENBalanceDiv.style.borderColor = 'rgba(108, 117, 125, 0.2)';
@@ -624,7 +627,7 @@
                     showMessage(successMessage, 'success');
                     publicKeyInput.value = '';
                     mathAnswerInput.value = '';
-                    solXENBalanceDiv.textContent = 'solXEN: --';
+                    solXENBalanceDiv.innerHTML = '<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: --';
                     updateFormState(0); // reset to disabled state
                     // Load new challenge for next request
                     loadMathChallenge();
