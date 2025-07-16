@@ -5,162 +5,321 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X1 Testnet Faucet</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background: #fff;
-            color: #333;
+            padding: 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #2c3e50;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            line-height: 1.6;
         }
+        
         .container {
-            border: 1px solid #ddd;
-            padding: 30px;
-            border-radius: 5px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 40px;
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
+            margin: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        
         .site-url {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-size: 14px;
         }
+        
         .site-url a {
-            color: #666;
+            color: #6c757d;
             text-decoration: none;
+            transition: color 0.2s ease;
         }
+        
         .site-url a:hover {
-            color: #333;
+            color: #495057;
             text-decoration: underline;
         }
+        
         h1 {
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 24px;
-            font-weight: normal;
+            margin-bottom: 30px;
+            font-size: 32px;
+            font-weight: 600;
+            color: #2c3e50;
+            letter-spacing: -0.5px;
         }
+        
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 24px;
             display: flex;
-            align-items: center;
-            gap: 15px;
+            flex-direction: column;
+            gap: 8px;
         }
+        
         label {
-            flex-shrink: 0;
-            width: 120px;
-            font-weight: normal;
-        }
-        input[type="text"], input[type="number"] {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+            font-weight: 500;
+            color: #495057;
             font-size: 14px;
+            margin-bottom: 4px;
         }
+        
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            color: #2c3e50;
+        }
+        
         input[type="text"]:focus, input[type="number"]:focus {
             outline: none;
-            border-color: #999;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
         }
+        
+        input[type="text"]::placeholder, input[type="number"]::placeholder {
+            color: #adb5bd;
+        }
+        
         .math-challenge {
-            background: #f8f8f8;
-            border: 1px solid #ddd;
-            padding: 15px;
-            border-radius: 3px;
-            margin-bottom: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #e9ecef;
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
         }
+        
+        .math-challenge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+        
         .math-question {
             font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 600;
+            margin-bottom: 12px;
             text-align: center;
+            color: #2c3e50;
         }
+        
         .challenge-refresh {
             text-align: center;
-            margin-top: 10px;
+            margin-top: 12px;
         }
+        
         .refresh-btn {
             background: none;
             border: none;
-            color: #666;
+            color: #6c757d;
             text-decoration: underline;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
+            transition: color 0.2s ease;
+            padding: 6px 12px;
+            border-radius: 6px;
         }
+        
         .refresh-btn:hover {
-            color: #333;
+            color: #495057;
+            background: rgba(108, 117, 125, 0.1);
         }
-        button {
+        
+        button[type="submit"] {
             width: 100%;
-            padding: 12px;
-            background: #333;
+            padding: 16px;
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
             color: white;
             border: none;
-            border-radius: 3px;
-            font-size: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
-        button:hover {
-            background: #555;
+        
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
         }
-        button:disabled {
-            background: #ccc;
+        
+        button[type="submit"]:disabled {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
             cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
         }
+        
         .message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 3px;
+            margin-top: 24px;
+            padding: 16px 20px;
+            border-radius: 12px;
             text-align: center;
             font-size: 14px;
             word-break: break-all;
             overflow-wrap: break-word;
-            line-height: 1.4;
+            line-height: 1.5;
+            border: 2px solid transparent;
         }
+        
         .success {
-            background: #f0f8f0;
-            color: #2d5a2d;
-            border: 1px solid #c0d8c0;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            color: #155724;
+            border-color: #c3e6cb;
         }
+        
         .success a {
-            color: #1a4a1a;
+            color: #0f5132;
             text-decoration: underline;
             cursor: pointer;
+            font-weight: 500;
         }
+        
         .success a:hover {
-            color: #0a2a0a;
+            color: #0a3624;
             text-decoration: none;
         }
+        
         .error {
-            background: #f8f0f0;
-            color: #5a2d2d;
-            border: 1px solid #d8c0c0;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            border-color: #f5c6cb;
         }
+        
         .info {
-            background: #f8f8f8;
-            color: #666;
-            border: 1px solid #ddd;
-            margin-top: 20px;
+            background: linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%);
+            color: #383d41;
+            border-color: #d6d8db;
+            margin-top: 24px;
+            font-size: 14px;
         }
+        
+        .info strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
         .footer-info {
             text-align: center;
-            margin-top: 25px;
+            margin-top: 32px;
             font-size: 14px;
-            color: #666;
+            color: #6c757d;
+            padding-top: 24px;
+            border-top: 1px solid #e9ecef;
         }
+        
         .footer-info a {
-            color: #666;
+            color: #007bff;
             text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
         }
+        
         .footer-info a:hover {
-            color: #333;
+            color: #0056b3;
             text-decoration: underline;
         }
+        
         .loading {
             opacity: 0.6;
             pointer-events: none;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 24px;
+            }
+            
+            h1 {
+                font-size: 28px;
+            }
+            
+            .form-group {
+                margin-bottom: 20px;
+            }
+            
+            input[type="text"], input[type="number"] {
+                padding: 12px 14px;
+                font-size: 16px;
+            }
+            
+            button[type="submit"] {
+                padding: 14px;
+                font-size: 16px;
+            }
+        }
+        
+        /* 添加一些微妙的动画效果 */
+        .container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* 改进的输入框样式 */
+        input[type="text"], input[type="number"] {
+            position: relative;
+        }
+        
+        /* 添加焦点时的光晕效果 */
+        input[type="text"]:focus, input[type="number"]:focus {
+            transform: translateY(-1px);
+        }
+        
+        /* 改进按钮的活跃状态 */
+        button[type="submit"]:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+
+        .math-challenge .form-group {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .math-challenge .form-group label {
+            flex-shrink: 0;
+            width: 60px;
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        
+        .math-challenge .form-group input {
+            flex: 1;
+            margin-bottom: 0;
         }
     </style>
 </head>
@@ -209,7 +368,7 @@
         <div class="info message">
             Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br><br>
             <strong>Support this faucet by donating XNT:</strong><br>
-            Donation address: <span style="font-family: monospace; word-break: break-all; color: #5DADE2;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
+            Donation address: <span style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; word-break: break-all; color: #007bff; background: rgba(0, 123, 255, 0.1); padding: 4px 8px; border-radius: 6px;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
             Current balance: <span id="donationBalance">Loading...</span> XNT
         </div>
         
