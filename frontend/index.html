@@ -415,7 +415,7 @@
 
         <div class="info message">
             Each address can request airdrop once every 24 hours. Get 1 XNT per request.<br>
-            <strong>Requirements:</strong> Must hold at least 42,069 <a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: #007bff; text-decoration: underline;">solXEN</a> tokens on Solana Mainnet.<br><br>
+            <strong>Requirements:</strong> Must hold at least 420,690 <a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: #007bff; text-decoration: underline;">solXEN</a> tokens on Solana Mainnet.<br><br>
             <strong>Support this faucet by donating XNT on X1 Testnet:</strong><br>
             Donation address: <span style="font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace; word-break: break-all; color: #007bff; background: rgba(0, 123, 255, 0.1); padding: 4px 8px; border-radius: 6px;">CgYxQ5MsPmsyeUTroVm5DX8hzz48ufg8U7k12R58ftcV</span><br>
             Current balance: <span id="donationBalance">Loading...</span> XNT
@@ -440,7 +440,7 @@
             const mathAnswer = document.getElementById('mathAnswer');
             const refreshBtn = document.getElementById('refreshChallenge');
             
-            const isEligible = solxenBalance >= 42069;
+            const isEligible = solxenBalance >= 420_690;
             
             if (isEligible) {
                 // enable state
@@ -506,7 +506,7 @@
                         solXENBalanceDiv.innerHTML = `<a href="https://dexscreener.com/solana/5cyxp6xwlnzd7h2mclia6h69tiygjpthedaxjuvawime" target="_blank" style="color: inherit; text-decoration: none;">solXEN</a>: ${balanceText}`;
                         
                         // Change color based on requirement
-                        if (balance >= 42069) {
+                        if (balance >= 420_690) {
                             solXENBalanceDiv.style.color = '#28a745';
                             solXENBalanceDiv.style.background = 'rgba(40, 167, 69, 0.1)';
                             solXENBalanceDiv.style.borderColor = 'rgba(40, 167, 69, 0.2)';

@@ -29,7 +29,7 @@ use rand::Rng;
 // X1 Network token constants
 const LAMPORTS_PER_XNT: u64 = LAMPORTS_PER_SOL; // 1 XNT = 1e9 lamports
 const SOLXEN_MINT: &str = "6f8deE148nynnSiWshA9vLydEbJGpDeKh5G4PRgjmzG7";
-const MIN_SOLXEN_REQUIRED: u64 = 42069;
+const MIN_SOLXEN_REQUIRED: u64 = 420_690;
 
 // Math challenge structure
 #[derive(Debug, Clone, Serialize)]
