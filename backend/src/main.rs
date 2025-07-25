@@ -410,8 +410,8 @@ async fn handle_airdrop(
             )
         })?;
 
-    // Check if balance is sufficient (1 XNT + fees)
-    let airdrop_amount = LAMPORTS_PER_XNT; // 1 XNT
+    // Check if balance is sufficient (0.1 XNT + fees)  
+    let airdrop_amount = LAMPORTS_PER_XNT / 10; // 0.1 XNT
     if faucet_balance < airdrop_amount + 5000 {
         // Reserve 5000 lamports for fees
         error!("Insufficient faucet balance: {} lamports", faucet_balance);
@@ -460,7 +460,7 @@ async fn handle_airdrop(
 
     Ok(Json(AirdropResponse {
         signature: signature.to_string(),
-        message: format!("Successfully airdropped 1 XNT to {}", recipient_pubkey),
+        message: format!("Successfully airdropped 0.1 XNT to {}", recipient_pubkey),
     }))
 }
 
